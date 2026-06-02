@@ -153,7 +153,7 @@ input[type=file]{display:none}
 
 <div class="hdr">
   <img id="logoImg" src="" alt="Logo">
-  <div class="ti"><h1>Presensi MI Sultan Agung</h1><p id="subTxt">T.P. 2026/2027</p></div>
+  <div class="ti"><h1>Presensi MI Sultan Agung</h1><p id="subTxt">T.A. 2026/2027</p></div>
   <div class="badge" id="todayBadge"></div>
   <span class="sync-dot" id="syncDot" title="Status sinkronisasi"></span>
 </div>
@@ -730,7 +730,7 @@ function buildCard(s,col,container){
       <div class="idc-id">${s.id}</div>
       <div id="qr_${safeId(s.id)}" class="idc-qr"></div>
     </div>
-    <div class="idc-ft" style="background:${c2}"><span>T.P. ${tp}</span></div>`;
+    <div class="idc-ft" style="background:${c2}"><span>T.A. ${tp}</span></div>`;
   container.appendChild(div);
   try{
     new QRCode(document.getElementById('qr_'+safeId(s.id)),{
@@ -864,7 +864,7 @@ function saveSettings(){
   cfg.alamat=document.getElementById('sAlamat').value;
   cfg.gasUrl=document.getElementById('sGasUrl').value.trim();
   saveCfg();
-  document.getElementById('subTxt').textContent='T.P. '+cfg.tahun;
+  document.getElementById('subTxt').textContent='T.A. '+cfg.tahun;
 }
 function renderSettings(){
   document.getElementById('sNama').value=cfg.sekolah||'';
@@ -938,7 +938,7 @@ function init(){
   li.onerror=()=>li.src='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40"><rect width="40" height="40" rx="20" fill="%231a6b3a"/><text x="20" y="25" text-anchor="middle" fill="white" font-size="16" font-weight="bold">M</text></svg>';
   // Header
   document.getElementById('todayBadge').textContent=new Date().toLocaleDateString('id-ID',{day:'numeric',month:'short'});
-  document.getElementById('subTxt').textContent='T.P. '+cfg.tahun;
+  document.getElementById('subTxt').textContent='T.A. '+cfg.tahun;
   // UI
   popAll(); renderSiswa(); updScanStats();
   document.getElementById('mlabel').textContent=MONTHS[curMonth]+' '+curYear;
