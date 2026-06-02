@@ -153,7 +153,7 @@ input[type=file]{display:none}
 
 <div class="hdr">
   <img id="logoImg" src="" alt="Logo">
-  <div class="ti"><h1>Presensi MI Sultan Agung</h1><p id="subTxt">T.P. 2024/2025</p></div>
+  <div class="ti"><h1>Presensi MI Sultan Agung</h1><p id="subTxt">T.P. 2026/2027</p></div>
   <div class="badge" id="todayBadge"></div>
   <span class="sync-dot" id="syncDot" title="Status sinkronisasi"></span>
 </div>
@@ -341,7 +341,7 @@ input[type=file]{display:none}
 // STATE
 // ============================================================
 let students=[], attend={}, kelasList=[], clrMap={};
-let cfg={sekolah:'MI Sultan Agung',tahun:'2024/2025',alamat:'Yogyakarta',gasUrl:''};
+let cfg={sekolah:'MI Sultan Agung',tahun:'2026/2027',alamat:'Condongcatur Depok Sleman DI Yogyakarta',gasUrl:''};
 let curColor=0, curMonth=new Date().getMonth(), curYear=new Date().getFullYear();
 let camStream=null, scanInterval=null;
 const MONTHS=['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
@@ -710,8 +710,8 @@ function previewCard(){
 function buildCard(s,col,container){
   // Baca cfg terbaru setiap kali render
   const nm=cfg.sekolah||'MI Sultan Agung';
-  const tp=cfg.tahun||'2024/2025';
-  const al=cfg.alamat||'Yogyakarta';
+  const tp=cfg.tahun||'2026/2027';
+  const al=cfg.alamat||'Condongcatur Depok Sleman DI Yogyakarta';
   const {c1,c2}=col;
   const div=document.createElement('div');
   div.className='idc';
