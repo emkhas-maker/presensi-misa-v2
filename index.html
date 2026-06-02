@@ -453,50 +453,94 @@ function popCardSel(){
 }
 
 // ============================================================
-// CAMERA — menggunakan jsQR untuk scanning universal
+// CAMERA — jsQR + fallback BarcodeDetector
 // ============================================================
 async function startCam(){
   const box=document.getElementById('scanBox');
   if(camStream){toast('Kamera sudah aktif','📷');return}
   try{
+    // Gunakan resolusi rendah agar jsQR lebih cepat proses
     const stream=await navigator.mediaDevices.getUserMedia({
-      video:{facingMode:{ideal:'environment'},width:{ideal:1280},height:{ideal:720}}
+      video:{facingMode:{ideal:'environment'},width:{ideal:640},height:{ideal:480}}
     });
     camStream=stream;
-    // Buat elemen video + canvas tersembunyi
     const vid=document.createElement('video');
     vid.srcObject=stream; vid.autoplay=true; vid.playsInline=true;
     vid.style.cssText='position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:12px';
     const cv=document.createElement('canvas');
-    cv.className='scan-canvas';// hidden via CSS
+    cv.style.display='none';
     box.innerHTML='';
     box.appendChild(vid);
     box.appendChild(cv);
-    // Overlay
+    // Status text di bawah frame
+    const stxt=document.createElement('div');
+    stxt.id='scanStatusTxt';
+    stxt.style.cssText='position:absolute;bottom:8px;left:0;right:0;text-align:center;font-size:11px;color:rgba(255,255,255,0.8);z-index:10;pointer-events:none';
+    stxt.textContent='Menunggu kamera siap...';
+    box.appendChild(stxt);
+    // Overlay frame
     const ov=document.createElement('div');
     ov.className='scan-over';
     ov.innerHTML='<div class="sf"><div class="sc-bl"></div><div class="sc-br"></div><div class="sl"></div></div>';
     box.appendChild(ov);
-    // Mulai scanning loop pakai jsQR
+
     const ctx=cv.getContext('2d',{willReadFrequently:true});
     let lastScan=0;
-    scanInterval=setInterval(()=>{
+    let frameCount=0;
+
+    // Coba BarcodeDetector dulu (lebih akurat di Android Chrome)
+    let bd=null;
+    if('BarcodeDetector' in window){
+      try{bd=new BarcodeDetector({formats:['qr_code']});}catch(e){bd=null;}
+    }
+
+    vid.addEventListener('loadedmetadata',()=>{
+      stxt.textContent=bd?'Mode: BarcodeDetector ✓':'Mode: jsQR ✓';
+    });
+
+    scanInterval=setInterval(async()=>{
       if(vid.readyState<vid.HAVE_ENOUGH_DATA) return;
-      cv.width=vid.videoWidth; cv.height=vid.videoHeight;
-      ctx.drawImage(vid,0,0,cv.width,cv.height);
-      const img=ctx.getImageData(0,0,cv.width,cv.height);
-      const code=jsQR(img.data,img.width,img.height,{inversionAttempts:'dontInvert'});
-      if(code && code.data){
-        const now=Date.now();
-        if(now-lastScan>3000){// debounce 3 detik
-          lastScan=now;
-          processQR(code.data);
+      frameCount++;
+      // Set canvas sesuai video (max 640px)
+      const W=Math.min(vid.videoWidth,640);
+      const H=Math.min(vid.videoHeight,480);
+      cv.width=W; cv.height=H;
+      ctx.drawImage(vid,0,0,W,H);
+
+      const now=Date.now();
+      if(now-lastScan<2500) return; // debounce
+
+      try{
+        if(bd){
+          // BarcodeDetector (Android Chrome native)
+          const codes=await bd.detect(cv);
+          if(codes.length>0){
+            lastScan=now;
+            stxt.textContent='QR terdeteksi!';
+            processQR(codes[0].rawValue);
+          }else{
+            stxt.textContent='Arahkan ke QR Code... ('+frameCount+')';
+          }
+        }else{
+          // jsQR fallback
+          const imgData=ctx.getImageData(0,0,W,H);
+          const code=jsQR(imgData.data,imgData.width,imgData.height,{inversionAttempts:'attemptBoth'});
+          if(code&&code.data){
+            lastScan=now;
+            stxt.textContent='QR terdeteksi!';
+            processQR(code.data);
+          }else{
+            stxt.textContent='Arahkan ke QR Code... ('+frameCount+')';
+          }
         }
+      }catch(e){
+        stxt.textContent='Error: '+e.message;
       }
-    },300);
-    toast('Kamera aktif — arahkan ke QR Code','📷');
+    },200);
+
+    toast('Kamera aktif','📷');
   }catch(e){
-    box.innerHTML='<div class="cam-ph"><i class="ti ti-camera-off"></i><p>Kamera tidak bisa diakses.<br>Gunakan input ID manual.</p></div>';
+    box.innerHTML='<div class="cam-ph"><i class="ti ti-camera-off"></i><p>Kamera tidak bisa diakses.<br>Gunakan input ID manual di bawah.</p></div>';
     toast('Kamera gagal: '+e.message,'❌');
   }
 }
@@ -508,8 +552,11 @@ function stopCam(){
 }
 function processQR(raw){
   const id=raw.trim().toUpperCase();
-  const s=students.find(x=>x.id.toUpperCase()===id);
-  if(!s){toast('QR tidak dikenal: '+raw,'❌');return}
+  // Cari exact match dulu
+  let s=students.find(x=>x.id.toUpperCase()===id);
+  // Kalau tidak ketemu, coba partial (jaga-jaga ada spasi/newline)
+  if(!s) s=students.find(x=>id.includes(x.id.toUpperCase())||x.id.toUpperCase().includes(id));
+  if(!s){toast('ID tidak ditemukan: '+raw,'❌');return}
   recordScan(s);
 }
 function scanManual(){
