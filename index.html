@@ -153,7 +153,7 @@ input[type=file]{display:none}
 
 <div class="hdr">
   <img id="logoImg" src="" alt="Logo">
-  <div class="ti"><h1>Presensi MI Sultan Agung</h1><p id="subTxt">T.A. 2026/2027</p></div>
+  <div class="ti"><h1>Presensi MI Sultan Agung</h1><p id="subTxt">T.P. 2024/2025</p></div>
   <div class="badge" id="todayBadge"></div>
   <span class="sync-dot" id="syncDot" title="Status sinkronisasi"></span>
 </div>
@@ -303,6 +303,14 @@ input[type=file]{display:none}
       <p style="font-size:11px;color:var(--gray);margin-top:4px">Isi URL setelah deploy Apps Script</p>
     </div>
     <button class="btn bp bsm" onclick="saveSettings();toast('Tersimpan!','✅')"><i class="ti ti-device-floppy"></i>Simpan Pengaturan</button>
+    <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">
+      <p style="font-size:11px;font-weight:700;color:var(--gray);margin-bottom:6px">SINKRONISASI DATA</p>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        <button class="btn bp bsm" onclick="syncFromSheets()"><i class="ti ti-cloud-download"></i>Tarik Data dari Sheets</button>
+        <button class="btn bo bsm" onclick="syncAttendToSheets()"><i class="ti ti-cloud-upload"></i>Kirim Presensi ke Sheets</button>
+      </div>
+      <p style="font-size:11px;color:var(--gray);margin-top:6px" id="syncStatus">Tap "Tarik Data" untuk pertama kali di HP baru</p>
+    </div>
   </div>
   <div class="card">
     <div class="ct" style="color:var(--green)"><i class="ti ti-layout-grid"></i>Manajemen Kelas</div>
@@ -341,7 +349,7 @@ input[type=file]{display:none}
 // STATE
 // ============================================================
 let students=[], attend={}, kelasList=[], clrMap={};
-let cfg={sekolah:'MI Sultan Agung',tahun:'2026/2027',alamat:'Condongcatur Depok Sleman DI Yogyakarta',gasUrl:''};
+let cfg={sekolah:'MI Sultan Agung',tahun:'2024/2025',alamat:'Yogyakarta',gasUrl:''};
 let curColor=0, curMonth=new Date().getMonth(), curYear=new Date().getFullYear();
 let camStream=null, scanInterval=null;
 const MONTHS=['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
@@ -710,8 +718,8 @@ function previewCard(){
 function buildCard(s,col,container){
   // Baca cfg terbaru setiap kali render
   const nm=cfg.sekolah||'MI Sultan Agung';
-  const tp=cfg.tahun||'2026/2027';
-  const al=cfg.alamat||'Condongcatur Depok Sleman DI Yogyakarta';
+  const tp=cfg.tahun||'2024/2025';
+  const al=cfg.alamat||'Yogyakarta';
   const {c1,c2}=col;
   const div=document.createElement('div');
   div.className='idc';
@@ -730,7 +738,7 @@ function buildCard(s,col,container){
       <div class="idc-id">${s.id}</div>
       <div id="qr_${safeId(s.id)}" class="idc-qr"></div>
     </div>
-    <div class="idc-ft" style="background:${c2}"><span>T.A. ${tp}</span></div>`;
+    <div class="idc-ft" style="background:${c2}"><span>T.P. ${tp}</span></div>`;
   container.appendChild(div);
   try{
     new QRCode(document.getElementById('qr_'+safeId(s.id)),{
@@ -864,7 +872,7 @@ function saveSettings(){
   cfg.alamat=document.getElementById('sAlamat').value;
   cfg.gasUrl=document.getElementById('sGasUrl').value.trim();
   saveCfg();
-  document.getElementById('subTxt').textContent='T.A. '+cfg.tahun;
+  document.getElementById('subTxt').textContent='T.P. '+cfg.tahun;
 }
 function renderSettings(){
   document.getElementById('sNama').value=cfg.sekolah||'';
@@ -917,6 +925,119 @@ function resetPresensi(){
 // ============================================================
 // HELPERS
 // ============================================================
+// ============================================================
+// SYNC FROM SHEETS — tarik semua data ke localStorage HP
+// ============================================================
+async function syncFromSheets(){
+  const url=gasUrl();
+  if(!url){toast('Isi URL Apps Script di Setting dulu!','❌');return}
+  const btn=event.target.closest('button');
+  const orig=btn.innerHTML;
+  btn.innerHTML='<span class="spin"></span> Mengambil data...';
+  btn.disabled=true;
+  setSyncStatus('Mengambil data siswa dari Sheets...');
+  try{
+    // 1. Tarik siswa
+    const rSiswa=await gasGet('getSiswa');
+    if(rSiswa.ok&&rSiswa.data){
+      students=rSiswa.data;
+      sv();
+      setSyncStatus('Siswa OK ('+students.length+'). Mengambil kelas...');
+    }
+    // 2. Tarik kelas
+    const rKelas=await gasGet('getKelas');
+    if(rKelas.ok&&rKelas.data&&rKelas.data.length){
+      kelasList=rKelas.data.map(k=>k.nama);
+      rKelas.data.forEach(k=>{if(k.warna) clrMap[k.nama]=k.warna});
+      saveKelas(); saveClr();
+      setSyncStatus('Kelas OK. Mengambil presensi hari ini...');
+    }
+    // 3. Tarik presensi hari ini
+    const rPres=await gasGet('getPresensiHari',{tanggal:todayKey()});
+    if(rPres.ok&&rPres.data){
+      if(!attend[todayKey()]) attend[todayKey()]={};
+      rPres.data.forEach(p=>{
+        attend[p.tanggal]=attend[p.tanggal]||{};
+        attend[p.tanggal][p.id]={status:p.status,waktu:p.waktu||''};
+      });
+      sa();
+    }
+    // 4. Tarik settings
+    const rSet=await gasGet('getSettings');
+    if(rSet.ok&&rSet.data){
+      cfg.sekolah=rSet.data.sekolah||cfg.sekolah;
+      cfg.tahun=rSet.data.tahun||cfg.tahun;
+      cfg.alamat=rSet.data.alamat||cfg.alamat;
+      saveCfg();
+    }
+    // Refresh UI
+    popAll(); renderSiswa(); updScanStats(); renderSettings();
+    document.getElementById('subTxt').textContent='T.P. '+cfg.tahun;
+    setSyncStatus('✅ Sinkron selesai — '+students.length+' siswa, '+Object.keys(attend[todayKey()]||{}).length+' presensi hari ini');
+    toast('Data berhasil disinkron dari Sheets!','✅');
+    setSyncDot('ok');
+  }catch(e){
+    setSyncStatus('❌ Gagal: '+e.message);
+    toast('Sinkronisasi gagal!','❌');
+    setSyncDot('err');
+  }finally{
+    btn.innerHTML=orig; btn.disabled=false;
+  }
+}
+
+async function syncAttendToSheets(){
+  const key=todayKey();
+  const rec=attend[key]||{};
+  if(!Object.keys(rec).length){toast('Belum ada presensi hari ini','⚠️');return}
+  setSyncStatus('Mengirim presensi ke Sheets...');
+  const data=Object.entries(rec).map(([id,v])=>{
+    const s=students.find(x=>x.id===id)||{nama:id,kelas:'-'};
+    return{id,nama:s.nama,kelas:s.kelas,status:v.status,waktu:v.waktu||''};
+  });
+  const res=await gasPost('manualPresensi',{data,tanggal:key,guru:'Sync HP'});
+  if(res.ok){
+    setSyncStatus('✅ '+data.length+' presensi terkirim ke Sheets');
+    toast(data.length+' presensi terkirim!','✅');
+  }else{
+    setSyncStatus('❌ Gagal: '+(res.msg||''));
+    toast('Gagal kirim presensi','❌');
+  }
+}
+
+function setSyncStatus(msg){
+  const el=document.getElementById('syncStatus');
+  if(el) el.textContent=msg;
+}
+
+async function syncFromSheetsAuto(){
+  // Sama dengan syncFromSheets tapi tanpa button reference
+  const url=gasUrl();
+  if(!url) return;
+  setSyncDot('sync');
+  try{
+    const rSiswa=await gasGet('getSiswa');
+    if(rSiswa.ok&&rSiswa.data){students=rSiswa.data;sv()}
+    const rKelas=await gasGet('getKelas');
+    if(rKelas.ok&&rKelas.data&&rKelas.data.length){
+      kelasList=rKelas.data.map(k=>k.nama);
+      rKelas.data.forEach(k=>{if(k.warna) clrMap[k.nama]=k.warna});
+      saveKelas();saveClr();
+    }
+    const rPres=await gasGet('getPresensiHari',{tanggal:todayKey()});
+    if(rPres.ok&&rPres.data){
+      attend[todayKey()]=attend[todayKey()]||{};
+      rPres.data.forEach(p=>{attend[p.tanggal]=attend[p.tanggal]||{};attend[p.tanggal][p.id]={status:p.status,waktu:p.waktu||''};});
+      sa();
+    }
+    popAll();renderSiswa();updScanStats();
+    setSyncDot('ok');
+    toast('Data otomatis disinkron: '+students.length+' siswa','✅');
+  }catch(e){setSyncDot('err')}
+}
+
+// ============================================================
+// HELPERS
+// ============================================================
 function p2(n){return String(n).padStart(2,'0')}
 function p2p(n){return String(n).padStart(4,'0')}
 function toast(msg,icon='ℹ️'){
@@ -938,7 +1059,7 @@ function init(){
   li.onerror=()=>li.src='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40"><rect width="40" height="40" rx="20" fill="%231a6b3a"/><text x="20" y="25" text-anchor="middle" fill="white" font-size="16" font-weight="bold">M</text></svg>';
   // Header
   document.getElementById('todayBadge').textContent=new Date().toLocaleDateString('id-ID',{day:'numeric',month:'short'});
-  document.getElementById('subTxt').textContent='T.A. '+cfg.tahun;
+  document.getElementById('subTxt').textContent='T.P. '+cfg.tahun;
   // UI
   popAll(); renderSiswa(); updScanStats();
   document.getElementById('mlabel').textContent=MONTHS[curMonth]+' '+curYear;
@@ -952,6 +1073,14 @@ function init(){
   if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
   // Sync dot awal
   setSyncDot(cfg.gasUrl?'ok':'err');
+  // Auto-sync jika HP baru (tidak ada data siswa tapi GAS URL sudah ada)
+  if(students.length===0 && cfg.gasUrl){
+    toast('Mendeteksi HP baru, menarik data dari Sheets...','🔄');
+    setTimeout(()=>{
+      // Simulasi click tombol sync
+      syncFromSheetsAuto();
+    },1000);
+  }
 }
 window.addEventListener('load',init);
 </script>
