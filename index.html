@@ -141,11 +141,13 @@ input[type=file]{display:none}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
 /* Print */
 @media print{
-  body{padding:0;background:#fff}
+  body{padding:0;background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}
   .bnav,.hdr,.no-print{display:none!important}
   .pg{display:block!important;padding:0}
   #printArea{display:flex!important;flex-wrap:wrap;gap:4mm;padding:4mm;justify-content:flex-start}
-  .idc{box-shadow:none;border:1px solid #ddd;margin:0}
+  .idc{box-shadow:none;border:1px solid #ddd;margin:0;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .idc-hdr,.idc-ft{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
+  * {-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
 }
 </style>
 </head>
@@ -236,16 +238,23 @@ input[type=file]{display:none}
 <div class="pg" id="pg-idcard">
   <div class="card no-print">
     <div class="ct" style="color:var(--green)"><i class="ti ti-id"></i>Generate ID Card</div>
-    <div class="fg"><label>Pilih Siswa (Preview)</label>
-      <select id="selCardSiswa" onchange="previewCard()"><option value="">-- Pilih Siswa --</option></select>
+    <div class="g2">
+      <div class="fg"><label>Filter Kelas (Print)</label>
+        <select id="selCardKelas" onchange="popCardSel();updatePrintInfo()"><option value="">Semua Kelas</option></select>
+      </div>
+      <div class="fg"><label>Preview Siswa</label>
+        <select id="selCardSiswa" onchange="previewCard()"><option value="">-- Pilih Siswa --</option></select>
+      </div>
     </div>
-    <div class="fg"><label>Warna Kartu</label>
+    <div class="fg"><label>Warna Kartu Override (opsional)</label>
       <div id="swatches" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px"></div>
+      <p style="font-size:11px;color:var(--gray);margin-top:4px">Jika tidak dipilih, otomatis pakai warna default per kelas</p>
     </div>
     <div style="display:flex;justify-content:center;margin:10px 0" id="cardPreview"></div>
-    <div style="display:flex;gap:6px;flex-wrap:wrap">
-      <button class="btn bp bsm" onclick="printAll()"><i class="ti ti-printer"></i>Print Semua Kartu</button>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+      <button class="btn bp bsm" onclick="printAll()"><i class="ti ti-printer"></i>Print Kartu</button>
       <button class="btn bo bsm" onclick="exportCardList()"><i class="ti ti-file-spreadsheet"></i>Export Daftar</button>
+      <span id="printInfo" style="font-size:11px;color:var(--gray)"></span>
     </div>
   </div>
   <div id="printArea" style="display:none"></div>
@@ -349,8 +358,8 @@ input[type=file]{display:none}
 // STATE
 // ============================================================
 let students=[], attend={}, kelasList=[], clrMap={};
-let cfg={sekolah:'MI Sultan Agung',tahun:'2026/2027',alamat:'Depok Sleman DI Yogyakarta',gasUrl:''};
-let curColor=0, curMonth=new Date().getMonth(), curYear=new Date().getFullYear();
+let cfg={sekolah:'MI Sultan Agung',tahun:'2026/2027',alamat:'Yogyakarta',gasUrl:''};
+let curColor=0, curColorOverride=null, curMonth=new Date().getMonth(), curYear=new Date().getFullYear();
 let camStream=null, scanInterval=null;
 const MONTHS=['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
 const COLORS=[
@@ -436,7 +445,7 @@ function showPg(p){
 // POPULATE SELECTS
 // ============================================================
 function popAll(){
-  ['selKelasGuru','selKelasMan','selRekapKls','nKls'].forEach(id=>{
+  ['selKelasGuru','selKelasMan','selRekapKls','nKls','selCardKelas'].forEach(id=>{
     const el=document.getElementById(id);if(!el)return;
     const v=el.value, isAll=id==='selRekapKls';
     el.innerHTML=isAll?'<option value="">Semua Kelas</option>':'<option value="">-- Pilih Kelas --</option>';
@@ -446,10 +455,21 @@ function popAll(){
 }
 function popCardSel(){
   const el=document.getElementById('selCardSiswa');
+  const klsEl=document.getElementById('selCardKelas');
+  const filterKls=klsEl?klsEl.value:'';
   const v=el.value;
   el.innerHTML='<option value="">-- Pilih Siswa --</option>';
-  students.forEach(s=>{const o=document.createElement('option');o.value=s.id;o.textContent=s.nama+' ('+s.kelas+')';el.appendChild(o)});
+  const list=filterKls?students.filter(s=>s.kelas===filterKls):students;
+  list.forEach(s=>{const o=document.createElement('option');o.value=s.id;o.textContent=s.nama+' ('+s.kelas+')';el.appendChild(o)});
   if(v) el.value=v;
+  updatePrintInfo();
+}
+function updatePrintInfo(){
+  const klsEl=document.getElementById('selCardKelas');
+  const filterKls=klsEl?klsEl.value:'';
+  const count=filterKls?students.filter(s=>s.kelas===filterKls).length:students.length;
+  const inf=document.getElementById('printInfo');
+  if(inf) inf.textContent='Akan print '+count+' kartu'+(filterKls?' ('+filterKls+')':' (semua kelas)');
 }
 
 // ============================================================
@@ -749,24 +769,32 @@ function getCardColor(kls){
   return COLORS[Math.max(0,i%COLORS.length)];
 }
 function buildSwatches(){
-  document.getElementById('swatches').innerHTML=COLORS.map((c,i)=>`
-    <div class="sw ${i===curColor?'on':''}" style="background:${c.c1}" title="${c.nm}" onclick="selColor(${i})"></div>`).join('');
+  const dots=COLORS.map((c,i)=>`
+    <div class="sw ${curColorOverride===i?'on':''}" style="background:${c.c1}" title="${c.nm}" onclick="selColor(${i})"></div>`).join('');
+  const reset=`<div class="sw" style="background:#f3f4f6;border:1.5px dashed #9ca3af;display:flex;align-items:center;justify-content:center;font-size:10px" title="Otomatis per kelas" onclick="resetColor()">A</div>`;
+  document.getElementById('swatches').innerHTML=dots+reset;
 }
-function selColor(i){curColor=i;buildSwatches();previewCard()}
+function selColor(i){curColorOverride=i;buildSwatches();previewCard()}
+function resetColor(){curColorOverride=null;buildSwatches();previewCard()}
 function previewCard(){
   const id=document.getElementById('selCardSiswa').value;
-  const s=id?students.find(x=>x.id===id):(students[0]||null);
+  const klsEl=document.getElementById('selCardKelas');
+  const filterKls=klsEl?klsEl.value:'';
+  // Pilih siswa: dari select, atau siswa pertama dari kelas filter, atau siswa pertama
+  let s=id?students.find(x=>x.id===id):null;
+  if(!s&&filterKls) s=students.find(x=>x.kelas===filterKls);
+  if(!s) s=students[0]||null;
   const wrap=document.getElementById('cardPreview');
-  if(!s){wrap.innerHTML='<p style="font-size:12px;color:var(--gray)">Pilih siswa untuk preview</p>';return}
+  if(!s){wrap.innerHTML='<p style="font-size:12px;color:var(--gray)">Belum ada siswa</p>';return}
   wrap.innerHTML='';
-  const col=COLORS[curColor];
+  const col=curColorOverride!==null?COLORS[curColorOverride]:getCardColor(s.kelas);
   buildCard(s,col,wrap);
 }
 function buildCard(s,col,container){
   // Baca cfg terbaru setiap kali render
   const nm=cfg.sekolah||'MI Sultan Agung';
   const tp=cfg.tahun||'2026/2027';
-  const al=cfg.alamat||'Depok Sleman DI Yogyakarta';
+  const al=cfg.alamat||'Yogyakarta';
   const {c1,c2}=col;
   const div=document.createElement('div');
   div.className='idc';
@@ -785,7 +813,7 @@ function buildCard(s,col,container){
       <div class="idc-id">${s.id}</div>
       <div id="qr_${safeId(s.id)}" class="idc-qr"></div>
     </div>
-    <div class="idc-ft" style="background:${c2}"><span>T.P. ${tp}</span></div>`;
+    <div class="idc-ft" style="background:${c2}"><span>T.A. ${tp}</span></div>`;
   container.appendChild(div);
   try{
     new QRCode(document.getElementById('qr_'+safeId(s.id)),{
@@ -797,16 +825,19 @@ function buildCard(s,col,container){
 function safeId(id){return id.replace(/[^a-z0-9]/gi,'_')}
 function printAll(){
   const area=document.getElementById('printArea');
+  const klsEl=document.getElementById('selCardKelas');
+  const filterKls=klsEl?klsEl.value:'';
+  const list=filterKls?students.filter(s=>s.kelas===filterKls):students;
+  if(!list.length){toast('Tidak ada siswa untuk diprint!','⚠️');return}
   area.innerHTML='';
-  students.forEach(s=>{
-    const col=getCardColor(s.kelas);
+  list.forEach(s=>{
+    // Gunakan override warna jika dipilih, kalau tidak pakai warna default kelas
+    const col=curColorOverride!==null?COLORS[curColorOverride]:getCardColor(s.kelas);
     buildCard(s,col,area);
   });
-  area.style.display='flex';
-  area.style.flexWrap='wrap';
-  area.style.gap='4mm';
-  area.style.padding='4mm';
-  setTimeout(()=>{window.print();setTimeout(()=>{area.style.display='none'},500)},800);
+  area.style.cssText='display:flex;flex-wrap:wrap;gap:4mm;padding:4mm';
+  toast('Membuka dialog print '+list.length+' kartu...','🖨️');
+  setTimeout(()=>{window.print();setTimeout(()=>{area.style.display='none'},800)},800);
 }
 function exportCardList(){
   const ws=XLSX.utils.aoa_to_sheet([['ID Number','Nama','Kelas'],...students.map(s=>[s.id,s.nama,s.kelas])]);
