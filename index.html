@@ -743,100 +743,98 @@ function renderRekap(){
   document.getElementById('rekapBody').innerHTML=rows.join('')||'<tr><td colspan="7" style="text-align:center;color:var(--gray);padding:12px">Belum ada data bulan ini</td></tr>';
 }
 function printRekap(){
-  const kls=document.getElementById('selRekapKls').value;
-  const bulanTahun=MONTHS[curMonth]+' '+curYear;
-  const list=kls?students.filter(s=>s.kelas===kls):students;
+  var kls=document.getElementById('selRekapKls').value;
+  var bulanTahun=MONTHS[curMonth]+' '+curYear;
+  var list=kls?students.filter(function(s){return s.kelas===kls}):students;
+  var tH=0,tS=0,tI=0,tA=0,no=1;
+  var rows='';
 
-  // Hitung data rekap
-  let rows='';
-  let tH=0,tS=0,tI=0,tA=0,no=1;
-  list.forEach(s=>{
-    let h=0,sk=0,iz=0,al=0;
-    Object.entries(attend).forEach(([dk,rec])=>{
-      const[y,m]=dk.split('-');
-      if(+y===curYear&&+m-1===curMonth&&rec[s.id]){
-        const st=rec[s.id].status;
+  list.forEach(function(s){
+    var h=0,sk=0,iz=0,al=0;
+    Object.entries(attend).forEach(function(e){
+      var dk=e[0],rec=e[1];
+      var ym=dk.split('-');
+      if(+ym[0]===curYear&&+ym[1]-1===curMonth&&rec[s.id]){
+        var st=rec[s.id].status;
         if(st==='hadir')h++;else if(st==='sakit')sk++;else if(st==='izin')iz++;else if(st==='alpa')al++;
       }
     });
     tH+=h;tS+=sk;tI+=iz;tA+=al;
-    const tot=h+sk+iz+al, pct=tot?Math.round(h/tot*100):0;
-    const rowBg=no%2===0?'#f9fafb':'#fff';
-    rows+=`<tr style="background:${rowBg}">
-      <td style="padding:6px 8px;border-bottom:1px solid #e5e7eb;text-align:center">${no++}</td>
-      <td style="padding:6px 8px;border-bottom:1px solid #e5e7eb;font-weight:600">${s.nama}</td>
-      <td style="padding:6px 8px;border-bottom:1px solid #e5e7eb">${s.kelas}</td>
-      <td style="padding:6px 8px;border-bottom:1px solid #e5e7eb;text-align:center;color:#1a6b3a;font-weight:700">${h}</td>
-      <td style="padding:6px 8px;border-bottom:1px solid #e5e7eb;text-align:center">${sk}</td>
-      <td style="padding:6px 8px;border-bottom:1px solid #e5e7eb;text-align:center">${iz}</td>
-      <td style="padding:6px 8px;border-bottom:1px solid #e5e7eb;text-align:center;color:#dc2626;font-weight:600">${al}</td>
-      <td style="padding:6px 8px;border-bottom:1px solid #e5e7eb;text-align:center">${pct}%</td>
-    </tr>`;
+    var tot=h+sk+iz+al, pct=tot?Math.round(h/tot*100):0;
+    var bg=no%2===0?'#f9fafb':'#fff';
+    rows+='<tr style="background:'+bg+'">'+
+      '<td style="padding:6px 8px;border-bottom:1px solid #e5e7eb;text-align:center">'+no+'</td>'+
+      '<td style="padding:6px 8px;border-bottom:1px solid #e5e7eb;font-weight:600">'+s.nama+'</td>'+
+      '<td style="padding:6px 8px;border-bottom:1px solid #e5e7eb;text-align:center">'+s.kelas+'</td>'+
+      '<td style="padding:6px 8px;border-bottom:1px solid #e5e7eb;text-align:center;color:#1a6b3a;font-weight:700">'+h+'</td>'+
+      '<td style="padding:6px 8px;border-bottom:1px solid #e5e7eb;text-align:center">'+sk+'</td>'+
+      '<td style="padding:6px 8px;border-bottom:1px solid #e5e7eb;text-align:center">'+iz+'</td>'+
+      '<td style="padding:6px 8px;border-bottom:1px solid #e5e7eb;text-align:center;color:#dc2626;font-weight:600">'+al+'</td>'+
+      '<td style="padding:6px 8px;border-bottom:1px solid #e5e7eb;text-align:center">'+pct+'%</td>'+
+      '</tr>';
+    no++;
   });
 
-  const pw=window.open('','_blank','width=900,height=700');
-  pw.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8">
-  <title>Rekap Presensi ${bulanTahun}</title>
-  <style>
-    *{box-sizing:border-box}
-    body{margin:0;padding:12mm;background:#fff;font-family:'Segoe UI',system-ui,sans-serif;font-size:12px}
-    table{width:100%;border-collapse:collapse}
-    th{background:#1a6b3a;color:#fff;padding:8px;text-align:center;font-size:11px;font-weight:700}
-    th:nth-child(2){text-align:left}
-    .ttl{background:#f0f4f0;font-weight:700}
-    @media print{
-      body{padding:10mm}
-      @page{margin:10mm;size:A4 portrait}
-      .no-print{display:none!important}
-      *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
-    }
-  </style>
-  </head><body>
-  <div class="no-print" style="padding:10px;background:#f0f4f0;margin-bottom:12px;border-radius:8px;display:flex;align-items:center;gap:10px">
-    <span style="font-size:13px;font-weight:600">Rekap ${bulanTahun}${kls?' — '+kls:''}</span>
-    <button onclick="window.print()" style="padding:8px 16px;background:#1a6b3a;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600">🖨️ Print</button>
-    <button onclick="window.close()" style="padding:8px 12px;background:#f3f4f6;border:1px solid #d1d5db;border-radius:6px;cursor:pointer;font-size:13px">Tutup</button>
-  </div>
-  <!-- Header Surat -->
-  <div style="text-align:center;margin-bottom:16px;padding-bottom:10px;border-bottom:2px solid #1a6b3a">
-    <div style="font-size:16px;font-weight:800;color:#1a6b3a">${cfg.sekolah||'MI Sultan Agung'}</div>
-    <div style="font-size:11px;color:#6b7280">${cfg.alamat||'Yogyakarta'} &bull; T.A. ${cfg.tahun||'2026/2027'}</div>
-    <div style="font-size:13px;font-weight:700;margin-top:8px">REKAP PRESENSI SISWA</div>
-    <div style="font-size:11px;color:#6b7280">${bulanTahun}${kls?' &mdash; '+kls:''}</div>
-  </div>
-  <!-- Tabel -->
-  <table>
-    <thead><tr>
-      <th style="width:30px">No</th>
-      <th style="text-align:left;min-width:160px">Nama Siswa</th>
-      <th>Kelas</th>
-      <th>Hadir</th>
-      <th>Sakit</th>
-      <th>Izin</th>
-      <th>Alpa</th>
-      <th>%</th>
-    </tr></thead>
-    <tbody>${rows}</tbody>
-    <tfoot><tr class="ttl">
-      <td colspan="3" style="padding:7px 8px;border-top:2px solid #1a6b3a;font-weight:700">TOTAL</td>
-      <td style="padding:7px 8px;border-top:2px solid #1a6b3a;text-align:center;color:#1a6b3a;font-weight:700">${tH}</td>
-      <td style="padding:7px 8px;border-top:2px solid #1a6b3a;text-align:center">${tS}</td>
-      <td style="padding:7px 8px;border-top:2px solid #1a6b3a;text-align:center">${tI}</td>
-      <td style="padding:7px 8px;border-top:2px solid #1a6b3a;text-align:center;color:#dc2626;font-weight:700">${tA}</td>
-      <td style="padding:7px 8px;border-top:2px solid #1a6b3a;text-align:center"></td>
-    </tr></tfoot>
-  </table>
-  <!-- Footer tanda tangan -->
-  <div style="margin-top:24px;display:flex;justify-content:flex-end">
-    <div style="text-align:center;min-width:180px">
-      <div style="font-size:11px">${cfg.alamat||'Yogyakarta'}, .............. ${curYear}</div>
-      <div style="font-size:11px;margin-top:2px">Kepala Madrasah,</div>
-      <div style="height:50px"></div>
-      <div style="font-size:11px;font-weight:700;border-top:1px solid #374151;padding-top:4px">(__________________)</div>
-    </div>
-  </div>
-  </body></html>`);
-  pw.document.close();
+  var sekolah=cfg.sekolah||'MI Sultan Agung';
+  var alamat=cfg.alamat||'Yogyakarta';
+  var tahun=cfg.tahun||'2026/2027';
+
+  var pw=window.open('','_blank','width=900,height=700');
+  var doc=pw.document;
+  doc.open();
+  doc.write('<!DOCTYPE html><html><head><meta charset="UTF-8">');
+  doc.write('<title>Rekap Presensi '+bulanTahun+'</title>');
+  doc.write('<style>');
+  doc.write('*{box-sizing:border-box}');
+  doc.write('body{margin:0;padding:12mm;background:#fff;font-family:Segoe UI,system-ui,sans-serif;font-size:12px}');
+  doc.write('table{width:100%;border-collapse:collapse}');
+  doc.write('th{background:#1a6b3a;color:#fff;padding:8px 6px;font-size:11px;font-weight:700;text-align:center}');
+  doc.write('th.left{text-align:left}');
+  doc.write('.ttl td{background:#e8f5ed;font-weight:700;border-top:2px solid #1a6b3a}');
+  doc.write('@media print{');
+  doc.write('body{padding:10mm}@page{margin:10mm;size:A4 portrait}');
+  doc.write('.no-print{display:none!important}');
+  doc.write('*{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}}');
+  doc.write('</style></head><body>');
+  // Toolbar
+  doc.write('<div class="no-print" style="padding:10px;background:#f0f4f0;margin-bottom:12px;border-radius:8px;display:flex;align-items:center;gap:10px">');
+  doc.write('<span style="font-size:13px;font-weight:600">Rekap '+bulanTahun+(kls?' — '+kls:'')+'</span>');
+  doc.write('<button onclick="window.print()" style="padding:8px 16px;background:#1a6b3a;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600">&#128424; Print / Simpan PDF</button>');
+  doc.write('<button onclick="window.close()" style="padding:8px 12px;background:#f3f4f6;border:1px solid #d1d5db;border-radius:6px;cursor:pointer;font-size:13px">Tutup</button>');
+  doc.write('</div>');
+  // Header surat
+  doc.write('<div style="text-align:center;margin-bottom:14px;padding-bottom:10px;border-bottom:3px solid #1a6b3a">');
+  doc.write('<div style="font-size:16px;font-weight:800;color:#1a6b3a">'+sekolah+'</div>');
+  doc.write('<div style="font-size:11px;color:#6b7280">'+alamat+' &bull; T.A. '+tahun+'</div>');
+  doc.write('<div style="font-size:14px;font-weight:700;margin-top:10px;letter-spacing:0.5px">REKAP PRESENSI SISWA</div>');
+  doc.write('<div style="font-size:12px;color:#374151;margin-top:2px">'+bulanTahun+(kls?' &mdash; '+kls:'')+'</div>');
+  doc.write('</div>');
+  // Tabel
+  doc.write('<table>');
+  doc.write('<thead><tr>');
+  doc.write('<th style="width:32px">No</th>');
+  doc.write('<th class="left" style="min-width:160px">Nama Siswa</th>');
+  doc.write('<th>Kelas</th><th>Hadir</th><th>Sakit</th><th>Izin</th><th>Alpa</th><th>%</th>');
+  doc.write('</tr></thead>');
+  doc.write('<tbody>'+rows+'</tbody>');
+  doc.write('<tfoot><tr class="ttl">');
+  doc.write('<td colspan="3" style="padding:7px 8px;text-align:right">TOTAL</td>');
+  doc.write('<td style="padding:7px 8px;text-align:center;color:#1a6b3a">'+tH+'</td>');
+  doc.write('<td style="padding:7px 8px;text-align:center">'+tS+'</td>');
+  doc.write('<td style="padding:7px 8px;text-align:center">'+tI+'</td>');
+  doc.write('<td style="padding:7px 8px;text-align:center;color:#dc2626">'+tA+'</td>');
+  doc.write('<td></td>');
+  doc.write('</tr></tfoot></table>');
+  // Tanda tangan
+  doc.write('<div style="margin-top:28px;display:flex;justify-content:flex-end">');
+  doc.write('<div style="text-align:center;min-width:190px">');
+  doc.write('<div style="font-size:11px">'+alamat+', &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; '+curYear+'</div>');
+  doc.write('<div style="font-size:11px;margin-top:4px">Kepala Madrasah,</div>');
+  doc.write('<div style="height:52px"></div>');
+  doc.write('<div style="font-size:11px;font-weight:700;border-top:1px solid #374151;padding-top:4px">(__________________________)</div>');
+  doc.write('</div></div>');
+  doc.write('</body></html>');
+  doc.close();
 }
 
 function exportExcel(){
@@ -932,78 +930,75 @@ function printAll(){
   const klsEl=document.getElementById('selCardKelas');
   const filterKls=klsEl?klsEl.value:'';
   const list=filterKls?students.filter(s=>s.kelas===filterKls):students;
-  if(!list.length){toast('Tidak ada siswa untuk diprint!','⚠️');return}
-  toast('Menyiapkan '+list.length+' kartu...','🖨️');
+  if(!list.length){toast('Tidak ada siswa untuk diprint!','\u26a0\ufe0f');return}
+  toast('Menyiapkan '+list.length+' kartu...','\ud83d\udda8\ufe0f');
 
-  // Kumpulkan semua HTML kartu
-  let cardsHtml='';
-  list.forEach(s=>{
-    const col=curColorOverride!==null?COLORS[curColorOverride]:getCardColor(s.kelas);
-    const {c1,c2}=col;
-    const nm=cfg.sekolah||'MI Sultan Agung';
-    const tp=cfg.tahun||'2026/2027';
-    const al=cfg.alamat||'Yogyakarta';
-    const qrId='qr_'+s.id.replace(/[^a-z0-9]/gi,'_');
-    cardsHtml+=`<div class="idc" style="width:204px;height:323px;border-radius:14px;overflow:hidden;font-family:Segoe UI,system-ui,sans-serif;border:1px solid #ccc;flex-shrink:0;break-inside:avoid;page-break-inside:avoid">
-      <div style="padding:10px 10px 8px;text-align:center;background:linear-gradient(135deg,${c1},${c2});-webkit-print-color-adjust:exact;print-color-adjust:exact">
-        <div style="display:flex;align-items:center;justify-content:center;gap:6px;margin-bottom:5px">
-          <img src="${LOGO_B64}" style="width:24px;height:24px;border-radius:50%;background:rgba(255,255,255,.9);padding:1px;object-fit:contain">
-          <div style="text-align:left">
-            <div style="font-size:7.5px;font-weight:800;color:#fff;line-height:1.2">${nm}</div>
-            <div style="font-size:6px;color:rgba(255,255,255,.8)">${al}</div>
-          </div>
-        </div>
-        <div style="background:rgba(255,255,255,.2);border-radius:4px;padding:2px 8px;display:inline-block">
-          <span style="font-size:7px;font-weight:700;color:#fff;letter-spacing:1px">KARTU PRESENSI</span>
-        </div>
-      </div>
-      <div style="background:#fff;padding:8px;text-align:center">
-        <div style="width:70px;height:70px;margin:0 auto 6px;border-radius:8px;border:2px dashed #d1d5db;display:flex;align-items:center;justify-content:center;background:#f9fafb">
-          <span style="font-size:10px;color:#9ca3af">📷<br><small>Foto</small></span>
-        </div>
-        <div style="font-size:11px;font-weight:800;color:#1f2937;line-height:1.2;margin-bottom:1px">${s.nama}</div>
-        <div style="font-size:9.5px;color:#4b5563;margin-bottom:2px">${s.kelas}</div>
-        <div style="font-size:8.5px;color:#9ca3af;font-family:monospace;margin-bottom:6px">${s.id}</div>
-        <div id="${qrId}" style="margin:0 auto;width:72px;height:72px"></div>
-      </div>
-      <div style="padding:5px;text-align:center;background:${c2};-webkit-print-color-adjust:exact;print-color-adjust:exact">
-        <span style="font-size:7.5px;font-weight:700;color:rgba(255,255,255,.9)">T.A. ${tp}</span>
-      </div>
-    </div>`;
+  const nm=cfg.sekolah||'MI Sultan Agung';
+  const tp=cfg.tahun||'2026/2027';
+  const al=cfg.alamat||'Yogyakarta';
+
+  // Build cards HTML pakai string concat (hindari nested backtick)
+  var cardsHtml='';
+  var qrScripts='';
+  list.forEach(function(s){
+    var col=curColorOverride!==null?COLORS[curColorOverride]:getCardColor(s.kelas);
+    var c1=col.c1, c2=col.c2;
+    var qrId='qr_'+s.id.replace(/[^a-z0-9]/gi,'_');
+    cardsHtml+='<div style="width:204px;height:323px;border-radius:14px;overflow:hidden;'+
+      'font-family:Segoe UI,system-ui,sans-serif;border:1px solid #ccc;flex-shrink:0;'+
+      'break-inside:avoid;page-break-inside:avoid;display:inline-block;vertical-align:top">'+
+      '<div style="padding:10px 10px 8px;text-align:center;background:linear-gradient(135deg,'+c1+','+c2+');'+
+      '-webkit-print-color-adjust:exact;print-color-adjust:exact">'+
+      '<div style="display:flex;align-items:center;justify-content:center;gap:6px;margin-bottom:5px">'+
+      '<img src="'+LOGO_B64+'" style="width:24px;height:24px;border-radius:50%;background:rgba(255,255,255,.9);padding:1px;object-fit:contain">'+
+      '<div style="text-align:left">'+
+      '<div style="font-size:7.5px;font-weight:800;color:#fff;line-height:1.2">'+nm+'</div>'+
+      '<div style="font-size:6px;color:rgba(255,255,255,.8)">'+al+'</div>'+
+      '</div></div>'+
+      '<div style="background:rgba(255,255,255,.2);border-radius:4px;padding:2px 8px;display:inline-block">'+
+      '<span style="font-size:7px;font-weight:700;color:#fff;letter-spacing:1px">KARTU PRESENSI</span>'+
+      '</div></div>'+
+      '<div style="background:#fff;padding:8px;text-align:center">'+
+      '<div style="width:70px;height:70px;margin:0 auto 6px;border-radius:8px;border:2px dashed #d1d5db;'+
+      'display:flex;align-items:center;justify-content:center;background:#f9fafb">'+
+      '<span style="font-size:10px;color:#9ca3af;text-align:center">Foto</span></div>'+
+      '<div style="font-size:11px;font-weight:800;color:#1f2937;line-height:1.2;margin-bottom:1px">'+s.nama+'</div>'+
+      '<div style="font-size:9.5px;color:#4b5563;margin-bottom:2px">'+s.kelas+'</div>'+
+      '<div style="font-size:8.5px;color:#9ca3af;font-family:monospace;margin-bottom:6px">'+s.id+'</div>'+
+      '<div id="'+qrId+'" style="margin:0 auto;width:72px;height:72px"></div>'+
+      '</div>'+
+      '<div style="padding:5px;text-align:center;background:'+c2+';'+
+      '-webkit-print-color-adjust:exact;print-color-adjust:exact">'+
+      '<span style="font-size:7.5px;font-weight:700;color:rgba(255,255,255,.9)">T.A. '+tp+'</span>'+
+      '</div></div>';
+    qrScripts+='try{new QRCode(document.getElementById("'+qrId+'"),'+
+      '{text:"'+s.id+'",width:72,height:72,colorDark:"#1f2937",colorLight:"#ffffff",'+
+      'correctLevel:QRCode.CorrectLevel.M})}catch(e){}\n';
   });
 
-  // Buka window baru khusus print
-  const pw=window.open('','_blank','width=900,height=700');
-  pw.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8">
-  <title>ID Card - ${filterKls||'Semua Kelas'}</title>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"><\/script>
-  <style>
-    *{box-sizing:border-box;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
-    body{margin:0;padding:6mm;background:#fff;font-family:'Segoe UI',system-ui,sans-serif}
-    .grid{display:flex;flex-wrap:wrap;gap:5mm;justify-content:flex-start;align-items:flex-start}
-    @media print{
-      body{padding:6mm}
-      @page{margin:6mm;size:A4}
-      .no-print{display:none!important}
-    }
-  </style>
-  </head><body>
-  <div class="no-print" style="padding:10px;background:#f0f4f0;margin-bottom:10px;border-radius:8px;display:flex;align-items:center;gap:10px">
-    <span style="font-size:13px;font-weight:600">${list.length} Kartu${filterKls?' — '+filterKls:''}</span>
-    <button onclick="window.print()" style="padding:8px 16px;background:#1a6b3a;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600">🖨️ Print</button>
-    <button onclick="window.close()" style="padding:8px 16px;background:#f3f4f6;border:1px solid #d1d5db;border-radius:6px;cursor:pointer;font-size:13px">Tutup</button>
-  </div>
-  <div class="grid">${cardsHtml}</div>
-  <script>
-    // Generate semua QR setelah halaman load
-    window.onload=function(){
-      ${list.map(s=>`try{new QRCode(document.getElementById('qr_${s.id.replace(/[^a-z0-9]/gi,'_')}'),{text:'${s.id}',width:72,height:72,colorDark:'#1f2937',colorLight:'#ffffff',correctLevel:QRCode.CorrectLevel.M})}catch(e){}`).join('
-')}
-    };
-  <\/script>
-  </body></html>`);
-  pw.document.close();
+  var pw=window.open('','_blank','width=950,height=750');
+  var doc=pw.document;
+  doc.open();
+  doc.write('<!DOCTYPE html><html><head><meta charset="UTF-8">');
+  doc.write('<title>ID Card - '+(filterKls||'Semua Kelas')+'</title>');
+  doc.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"><\/script>');
+  doc.write('<style>');
+  doc.write('*{box-sizing:border-box;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}');
+  doc.write('body{margin:0;padding:6mm;background:#fff;font-family:Segoe UI,system-ui,sans-serif}');
+  doc.write('.grid{display:flex;flex-wrap:wrap;gap:5mm;justify-content:flex-start;align-items:flex-start}');
+  doc.write('@media print{body{padding:6mm}@page{margin:6mm;size:A4}.no-print{display:none!important}}');
+  doc.write('</style></head><body>');
+  doc.write('<div class="no-print" style="padding:10px;background:#f0f4f0;margin-bottom:10px;border-radius:8px;display:flex;align-items:center;gap:10px">');
+  doc.write('<span style="font-size:13px;font-weight:600">'+list.length+' Kartu'+(filterKls?' — '+filterKls:'')+'</span>');
+  doc.write('<button onclick="window.print()" style="padding:8px 16px;background:#1a6b3a;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600">&#128424; Print</button>');
+  doc.write('<button onclick="window.close()" style="padding:8px 12px;background:#f3f4f6;border:1px solid #d1d5db;border-radius:6px;cursor:pointer;font-size:13px">Tutup</button>');
+  doc.write('</div>');
+  doc.write('<div class="grid">'+cardsHtml+'</div>');
+  doc.write('<script>window.onload=function(){'+qrScripts+'}<\/script>');
+  doc.write('</body></html>');
+  doc.close();
 }
+
 function exportCardList(){
   const ws=XLSX.utils.aoa_to_sheet([['ID Number','Nama','Kelas'],...students.map(s=>[s.id,s.nama,s.kelas])]);
   const wb=XLSX.utils.book_new();
