@@ -928,29 +928,31 @@ function previewCard(){
   buildCard(s,col,wrap);
 }
 function buildCard(s,col,container){
-  // Baca cfg terbaru setiap kali render
-  const nm=cfg.sekolah||'MI Sultan Agung';
-  const tp=cfg.tahun||'2026/2027';
-  const al=cfg.alamat||'Yogyakarta';
-  const {c1,c2}=col;
-  const div=document.createElement('div');
+  var nm=cfg.sekolah||'MI Sultan Agung';
+  var tp=cfg.tahun||'2026/2027';
+  var al=cfg.alamat||'Yogyakarta';
+  var c1=col.c1, c2=col.c2;
+  var fotoHtml=getFoto(s.id)
+    ?'<img src="'+getFoto(s.id)+'" style="width:100%;height:100%;object-fit:cover;border-radius:6px">'
+    :'<span style="font-size:10px;color:#9ca3af;text-align:center">📷<br><small>Tempel Foto</small></span>';
+  var div=document.createElement('div');
   div.className='idc';
-  div.innerHTML=`
-    <div class="idc-hdr" style="background:linear-gradient(135deg,${c1},${c2})">
-      <div class="idc-lr">
-        <img class="idc-logo" src="${LOGO_B64}" alt="Logo">
-        <div class="idc-sch"><h4>${nm}</h4><p>${al}</p></div>
-      </div>
-      <div class="idc-lbl"><span>KARTU PRESENSI</span></div>
-    </div>
-    <div class="idc-body">
-      <div class="idc-ph" id="idcph_${safeId(s.id)}">${getFoto(s.id)?'<img src="'+getFoto(s.id)+'" style="width:100%;height:100%;object-fit:cover;border-radius:6px">':'<span>📷<br><small>Tempel Foto</small></span>'}</div>
-      <div class="idc-nm">${s.nama}</div>
-      <div class="idc-kl">${s.kelas}</div>
-      <div class="idc-id">${s.id}</div>
-      <div id="qr_${safeId(s.id)}" class="idc-qr"></div>
-    </div>
-    <div class="idc-ft" style="background:${c2}"><span>T.A. ${tp}</span></div>`;
+  div.innerHTML=
+    '<div class="idc-hdr" style="background:linear-gradient(135deg,'+c1+','+c2+')">'+
+      '<div class="idc-lr">'+
+        '<img class="idc-logo" src="'+LOGO_B64+'" alt="Logo">'+
+        '<div class="idc-sch"><h4>'+nm+'</h4><p>'+al+'</p></div>'+
+      '</div>'+
+      '<div class="idc-lbl"><span>KARTU PRESENSI</span></div>'+
+    '</div>'+
+    '<div class="idc-body">'+
+      '<div class="idc-ph">'+fotoHtml+'</div>'+
+      '<div class="idc-nm">'+s.nama+'</div>'+
+      '<div class="idc-kl">'+s.kelas+'</div>'+
+      '<div class="idc-id">'+s.id+'</div>'+
+      '<div id="qr_'+safeId(s.id)+'" class="idc-qr"></div>'+
+    '</div>'+
+    '<div class="idc-ft" style="background:'+c2+'"><span>T.A. '+tp+'</span></div>';
   container.appendChild(div);
   try{
     new QRCode(document.getElementById('qr_'+safeId(s.id)),{
@@ -1162,21 +1164,30 @@ function renderSettings(){
   document.getElementById('sAlamat').value=cfg.alamat||'';
   document.getElementById('sGasUrl').value=cfg.gasUrl||'';
   // Kelas list
-  document.getElementById('klsList').innerHTML=kelasList.map(k=>`
-    <div style="display:flex;align-items:center;justify-content:space-between;padding:5px 8px;background:#f9fafb;border-radius:6px;margin-bottom:3px">
-      <span style="font-size:13px">${k}</span>
-      <button class="btn bd bsm" style="padding:3px 8px" onclick="delKelas('${k}')"><i class="ti ti-trash"></i></button>
-    </div>`).join('');
+  var klsHtml='';
+  kelasList.forEach(function(k){
+    klsHtml+='<div style="display:flex;align-items:center;justify-content:space-between;'+
+      'padding:5px 8px;background:#f9fafb;border-radius:6px;margin-bottom:3px">'+
+      '<span style="font-size:13px">'+k+'</span>'+
+      '<button class="btn bd bsm" style="padding:3px 8px" onclick="delKelas(''+k+'')">'+
+      '<i class="ti ti-trash"></i></button></div>';
+  });
+  document.getElementById('klsList').innerHTML=klsHtml;
   // Color per kelas
-  document.getElementById('clrSettings').innerHTML=kelasList.map(kls=>{
-    const curHex=clrMap[kls]||getCardColor(kls).c1;
-    return`<div style="display:flex;align-items:center;gap:6px;margin-bottom:6px">
-      <span style="font-size:12px;width:80px;flex-shrink:0">${kls}</span>
-      <div style="display:flex;gap:4px">${COLORS.map(c=>`
-        <div onclick="setClr('${kls}','${c.c1}')" style="width:20px;height:20px;border-radius:50%;background:${c.c1};cursor:pointer;border:2.5px solid ${curHex===c.c1?'#1f2937':'transparent'}"></div>`).join('')}
-      </div>
-    </div>`;
-  }).join('');
+  var clrHtml='';
+  kelasList.forEach(function(kls){
+    var curHex=clrMap[kls]||getCardColor(kls).c1;
+    var dots='';
+    COLORS.forEach(function(c){
+      dots+='<div onclick="setClr(''+kls+'',''+c.c1+'')" '+
+        'style="width:20px;height:20px;border-radius:50%;background:'+c.c1+';cursor:pointer;'+
+        'border:2.5px solid '+(curHex===c.c1?'#1f2937':'transparent')+'"></div>';
+    });
+    clrHtml+='<div style="display:flex;align-items:center;gap:6px;margin-bottom:6px">'+
+      '<span style="font-size:12px;width:80px;flex-shrink:0">'+kls+'</span>'+
+      '<div style="display:flex;gap:4px">'+dots+'</div></div>';
+  });
+  document.getElementById('clrSettings').innerHTML=clrHtml;
 }
 function addKelas(){
   const v=document.getElementById('nKelas').value.trim();
