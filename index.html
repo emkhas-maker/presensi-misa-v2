@@ -109,12 +109,16 @@ tr:hover td{background:#f9fafb}
 .ab.ssk{background:#fef9c3;border-color:#f59e0b;color:#854d0e}
 .ab.siz{background:#dbeafe;border-color:#3b82f6;color:#1d4ed8}
 .ab.sal{background:#fee2e2;border-color:#ef4444;color:#991b1b}
-/* Upload */
-.ua{border:2px dashed var(--border);border-radius:10px;padding:20px;text-align:center;cursor:pointer;transition:all .2s}
-.ua:hover{border-color:var(--green);background:var(--gl)}
-.ua i{font-size:28px;color:var(--gray);display:block;margin-bottom:6px}
-.ua p{font-size:12px;color:var(--gray)}
-input[type=file]{display:none}
+/* Foto siswa */
+.foto-thumb{width:36px;height:44px;border-radius:4px;object-fit:cover;border:1px solid var(--border);display:block}
+.foto-placeholder{width:36px;height:44px;border-radius:4px;background:#f3f4f6;border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:16px;color:#d1d5db}
+.btn-foto{padding:3px 7px;font-size:11px;border-radius:6px;border:1.5px solid var(--green);background:#fff;color:var(--green);cursor:pointer;white-space:nowrap}
+.btn-foto:hover{background:var(--gl)}
+input.foto-input{display:none}
+/* Animasi hasil scan */
+@keyframes scan-pop{0%{transform:scale(0.94);opacity:0}60%{transform:scale(1.02)}100%{transform:scale(1);opacity:1}}
+.sres-pop{animation:scan-pop 0.25s ease}
+
 /* Toast */
 .toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#1f2937;color:#fff;padding:10px 18px;border-radius:20px;font-size:13px;z-index:9999;display:flex;align-items:center;gap:8px;animation:tin .3s;white-space:nowrap;max-width:92vw;box-shadow:0 4px 12px rgba(0,0,0,.3)}
 @keyframes tin{from{opacity:0;transform:translateX(-50%) translateY(20px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
@@ -139,17 +143,6 @@ input[type=file]{display:none}
 .sync-dot.err{background:var(--red)}
 .sync-dot.sync{background:var(--yellow);animation:blink 1s infinite}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
-/* FOTO */
-.foto-thumb{width:36px;height:36px;border-radius:6px;object-fit:cover;border:1px solid var(--border);cursor:pointer;background:#f3f4f6}
-.foto-placeholder{width:36px;height:36px;border-radius:6px;border:1.5px dashed var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--gray);font-size:16px;background:#fafafa;flex-shrink:0}
-.foto-modal{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:9000;display:flex;align-items:center;justify-content:center;padding:16px}
-.foto-modal-box{background:#fff;border-radius:16px;width:100%;max-width:400px;overflow:hidden}
-.foto-modal-hdr{padding:14px 16px;font-weight:700;font-size:14px;color:var(--g2);border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
-.foto-modal-body{padding:16px}
-
-.foto-preview-wrap{text-align:center;margin-bottom:10px}
-.foto-preview-wrap img{max-width:160px;max-height:200px;border-radius:8px;border:2px solid var(--green)}
-
 /* Print */
 @media print{
   *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;color-adjust:exact!important}
@@ -187,7 +180,10 @@ input[type=file]{display:none}
       <select id="selKelasGuru"><option value="">-- Pilih Kelas --</option></select>
     </div>
     <div class="scan-box" id="scanBox">
-      <div class="cam-ph"><i class="ti ti-camera"></i><p>Tap Aktifkan Kamera</p></div>
+      <div class="cam-ph"><i class="ti ti-camera"></i><p>Aktifkan Kamera</p></div>
+    </div>
+    <div id="scanStatusBar" style="text-align:center;font-size:12px;color:var(--gray);padding:4px 0;min-height:20px">
+      <span id="scanStatusTxt">Pilih kelas lalu aktifkan kamera</span>
     </div>
     <div style="display:flex;gap:8px;margin-top:8px">
       <button class="btn bp bbl" onclick="startCam()"><i class="ti ti-camera"></i>Aktifkan Kamera</button>
@@ -362,29 +358,6 @@ input[type=file]{display:none}
   </div>
 </div>
 
-<!-- MODAL FOTO -->
-<div class="foto-modal" id="fotoModal" style="display:none">
-  <div class="foto-modal-box">
-    <div class="foto-modal-hdr">
-      <span id="fotoModalTitle">Foto Siswa</span>
-      <button onclick="closeFotoModal()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--gray)">✕</button>
-    </div>
-    <div class="foto-modal-body">
-      <div id="fotoPreviewWrap" class="foto-preview-wrap" style="display:none">
-        <img id="fotoPreviewImg" src="" alt="Preview">
-      </div>
-      <input type="file" id="fotoFileInput" accept="image/*" onchange="fotoFromFile(this)" style="display:none">
-      <div id="fotoBtnRow" style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center">
-        <button class="btn bp bsm" onclick="document.getElementById('fotoFileInput').click()"><i class="ti ti-upload"></i>Pilih File Foto</button>
-      </div>
-      <div id="fotoSaveBtns" style="display:none;gap:8px;justify-content:center;margin-top:10px;flex-wrap:wrap">
-        <button class="btn bp bsm" onclick="saveFoto()"><i class="ti ti-check"></i>Simpan Foto</button>
-        <button class="btn bg bsm" onclick="retakeFoto()"><i class="ti ti-refresh"></i>Pilih Ulang</button>
-      </div>
-    </div>
-  </div>
-</div>
-
 <!-- Bottom Nav -->
 <div class="bnav">
   <button class="nb active" id="nb-scan" onclick="showPg('scan')"><i class="ti ti-qrcode"></i>Scan</button>
@@ -475,7 +448,12 @@ function showPg(p){
   document.querySelectorAll('.nb').forEach(x=>x.classList.remove('active'));
   document.getElementById('pg-'+p).classList.add('active');
   document.getElementById('nb-'+p).classList.add('active');
-  if(p!=='scan') stopCam();
+  if(p==='scan'){
+    // Auto-aktifkan kamera jika belum aktif
+    if(!camStream) setTimeout(startCam, 200);
+  } else {
+    stopCam();
+  }
   if(p==='rekap') renderRekap();
   if(p==='data') renderSiswa();
   if(p==='settings') renderSettings();
@@ -570,7 +548,7 @@ async function startCam(){
       ctx.drawImage(vid,0,0,W,H);
 
       const now=Date.now();
-      if(now-lastScan<2500) return; // debounce
+      if(now-lastScan<1000) return; // debounce 1 detik
 
       try{
         if(bd){
@@ -612,13 +590,39 @@ function stopCam(){
   const box=document.getElementById('scanBox');
   box.innerHTML='<div class="cam-ph"><i class="ti ti-camera"></i><p>Tap Aktifkan Kamera</p></div>';
 }
+// ============================================================
+// BEEP FEEDBACK
+// ============================================================
+function beepOk(){
+  try{
+    const ctx=new(window.AudioContext||window.webkitAudioContext)();
+    const o=ctx.createOscillator(),g=ctx.createGain();
+    o.connect(g);g.connect(ctx.destination);
+    o.frequency.value=880;o.type='sine';
+    g.gain.setValueAtTime(0.35,ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+0.25);
+    o.start();o.stop(ctx.currentTime+0.25);
+  }catch(e){}
+}
+function beepFail(){
+  try{
+    const ctx=new(window.AudioContext||window.webkitAudioContext)();
+    const o=ctx.createOscillator(),g=ctx.createGain();
+    o.connect(g);g.connect(ctx.destination);
+    o.frequency.value=300;o.type='sawtooth';
+    g.gain.setValueAtTime(0.3,ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+0.4);
+    o.start();o.stop(ctx.currentTime+0.4);
+  }catch(e){}
+}
+
 function processQR(raw){
   const id=raw.trim().toUpperCase();
   // Cari exact match dulu
   let s=students.find(x=>x.id.toUpperCase()===id);
   // Kalau tidak ketemu, coba partial (jaga-jaga ada spasi/newline)
   if(!s) s=students.find(x=>id.includes(x.id.toUpperCase())||x.id.toUpperCase().includes(id));
-  if(!s){toast('ID tidak ditemukan: '+raw,'❌');return}
+  if(!s){beepFail();toast('ID tidak ditemukan: '+raw,'❌');return}
   recordScan(s);
 }
 function scanManual(){
@@ -640,10 +644,11 @@ function todayKey(){
 async function recordScan(s){
   const key=todayKey();
   if(!attend[key]) attend[key]={};
-  if(attend[key][s.id]){toast(s.nama+' sudah absen hari ini!','⚠️');return}
+  if(attend[key][s.id]){beepFail();toast(s.nama+' sudah absen hari ini!','⚠️');return}
   const wkt=new Date().toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'});
   attend[key][s.id]={status:'hadir',waktu:wkt};
   sa();
+  beepOk();
   showScanResult(s,'hadir',wkt);
   updScanStats();
   // Kirim ke GAS
@@ -652,14 +657,20 @@ async function recordScan(s){
   else toast('✓ '+s.nama+' dicatat (offline)','✅');
 }
 function showScanResult(s,status,wkt){
+  const isHadir=status==='hadir';
+  const color=isHadir?'#16a34a':'#ca8a04';
+  const bg=isHadir?'#dcfce7':'#fef9c3';
+  const label=isHadir?'HADIR ✓':'SUDAH ABSEN';
   document.getElementById('scanRes').innerHTML=`
-    <div class="sres">
-      <div class="av">${s.nama.charAt(0)}</div>
-      <div class="lin">
-        <h4>${s.nama}</h4>
-        <p>${s.kelas} · ${s.id}</p>
-        <p style="margin-top:3px"><span class="bdg b${status.charAt(0)==='h'?'h':status.charAt(0)==='s'?'sk':status.charAt(0)==='i'?'iz':'al'}">${status.toUpperCase()}</span>
-        <span style="font-size:11px;color:var(--gray);margin-left:4px">${wkt}</span></p>
+    <div style="border:2px solid ${color};border-radius:12px;padding:14px;background:${bg};display:flex;align-items:center;gap:12px;margin-bottom:10px">
+      <div style="width:56px;height:56px;border-radius:50%;background:${color};display:flex;align-items:center;justify-content:center;color:#fff;font-size:24px;font-weight:800;flex-shrink:0">${s.nama.charAt(0)}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:18px;font-weight:800;color:#111;line-height:1.2">${s.nama}</div>
+        <div style="font-size:12px;color:#555;margin-top:2px">${s.kelas} · ${s.id}</div>
+        <div style="margin-top:6px;display:flex;align-items:center;gap:8px">
+          <span style="background:${color};color:#fff;padding:4px 14px;border-radius:20px;font-size:13px;font-weight:700">${label}</span>
+          <span style="font-size:12px;color:#777">${wkt}</span>
+        </div>
       </div>
     </div>`;
 }
@@ -670,7 +681,18 @@ function updScanStats(){
   const t=vals.filter(v=>v.status!=='hadir').length;
   document.getElementById('ctH').textContent=h;
   document.getElementById('ctT').textContent=t;
-  document.getElementById('ctB').textContent=Math.max(0,students.length-Object.keys(rec).length);
+  const remaining=Math.max(0,students.length-Object.keys(rec).length);
+  document.getElementById('ctB').textContent=remaining;
+  // Update status text di kamera
+  const stxt=document.getElementById('scanStatusTxt');
+  const kelasGuru=document.getElementById('selKelasGuru').value;
+  if(stxt){
+    if(remaining>0){
+      stxt.textContent=(kelasGuru?kelasGuru+' — ':'')+remaining+' siswa belum scan';
+    }else{
+      stxt.textContent='Semua siswa sudah terabsen ✓';
+    }
+  }
   const entries=Object.entries(rec).slice(-8).reverse();
   document.getElementById('listToday').innerHTML=entries.length===0
     ?'<p style="font-size:12px;color:var(--gray);text-align:center;padding:10px">Belum ada presensi hari ini</p>'
@@ -928,31 +950,33 @@ function previewCard(){
   buildCard(s,col,wrap);
 }
 function buildCard(s,col,container){
-  var nm=cfg.sekolah||'MI Sultan Agung';
-  var tp=cfg.tahun||'2026/2027';
-  var al=cfg.alamat||'Yogyakarta';
-  var c1=col.c1, c2=col.c2;
-  var fotoHtml=getFoto(s.id)
-    ?'<img src="'+getFoto(s.id)+'" style="width:100%;height:100%;object-fit:cover;border-radius:6px">'
-    :'<span style="font-size:10px;color:#9ca3af;text-align:center">📷<br><small>Tempel Foto</small></span>';
-  var div=document.createElement('div');
+  // Baca cfg terbaru setiap kali render
+  const nm=cfg.sekolah||'MI Sultan Agung';
+  const tp=cfg.tahun||'2026/2027';
+  const al=cfg.alamat||'Yogyakarta';
+  const {c1,c2}=col;
+  const foto=getStudentPhoto(s.id);
+  const fotoHtml=foto
+    ?`<img src="${foto}" style="width:70px;height:70px;border-radius:8px;object-fit:cover;border:2px solid ${c1}">`
+    :`<div class="idc-ph"><span>📷<br><small>Belum ada foto</small></span></div>`;
+  const div=document.createElement('div');
   div.className='idc';
-  div.innerHTML=
-    '<div class="idc-hdr" style="background:linear-gradient(135deg,'+c1+','+c2+')">'+
-      '<div class="idc-lr">'+
-        '<img class="idc-logo" src="'+LOGO_B64+'" alt="Logo">'+
-        '<div class="idc-sch"><h4>'+nm+'</h4><p>'+al+'</p></div>'+
-      '</div>'+
-      '<div class="idc-lbl"><span>KARTU PRESENSI</span></div>'+
-    '</div>'+
-    '<div class="idc-body">'+
-      '<div class="idc-ph">'+fotoHtml+'</div>'+
-      '<div class="idc-nm">'+s.nama+'</div>'+
-      '<div class="idc-kl">'+s.kelas+'</div>'+
-      '<div class="idc-id">'+s.id+'</div>'+
-      '<div id="qr_'+safeId(s.id)+'" class="idc-qr"></div>'+
-    '</div>'+
-    '<div class="idc-ft" style="background:'+c2+'"><span>T.A. '+tp+'</span></div>';
+  div.innerHTML=`
+    <div class="idc-hdr" style="background:linear-gradient(135deg,${c1},${c2})">
+      <div class="idc-lr">
+        <img class="idc-logo" src="${LOGO_B64}" alt="Logo">
+        <div class="idc-sch"><h4>${nm}</h4><p>${al}</p></div>
+      </div>
+      <div class="idc-lbl"><span>KARTU PRESENSI</span></div>
+    </div>
+    <div class="idc-body">
+      <div style="margin:0 auto 6px;width:70px;height:70px">${fotoHtml}</div>
+      <div class="idc-nm">${s.nama}</div>
+      <div class="idc-kl">${s.kelas}</div>
+      <div class="idc-id">${s.id}</div>
+      <div id="qr_${safeId(s.id)}" class="idc-qr"></div>
+    </div>
+    <div class="idc-ft" style="background:${c2}"><span>T.A. ${tp}</span></div>`;
   container.appendChild(div);
   try{
     new QRCode(document.getElementById('qr_'+safeId(s.id)),{
@@ -995,9 +1019,11 @@ function printAll(){
       '<span style="font-size:7px;font-weight:700;color:#fff;letter-spacing:1px">KARTU PRESENSI</span>'+
       '</div></div>'+
       '<div style="background:#fff;padding:8px;text-align:center">'+
-      '<div style="width:70px;height:70px;margin:0 auto 6px;border-radius:8px;border:2px dashed #d1d5db;'+
-      'display:flex;align-items:center;justify-content:center;background:#f9fafb">'+
-      +(getFoto(s.id)?'<img src="'+getFoto(s.id)+'" style="width:66px;height:66px;object-fit:cover;border-radius:6px">':'<span style="font-size:10px;color:#9ca3af;text-align:center">Foto</span>')+'</div>'+
+      '<div style="width:70px;height:70px;margin:0 auto 6px;border-radius:8px;overflow:hidden">'+
+      (localStorage.getItem('foto_'+s.id)
+        ? '<img src="'+localStorage.getItem('foto_'+s.id)+'" style="width:70px;height:70px;object-fit:cover;border-radius:8px;border:2px solid '+c1+'">'
+        : '<div style="width:70px;height:70px;border-radius:8px;border:2px dashed #d1d5db;display:flex;align-items:center;justify-content:center;background:#f9fafb"><span style="font-size:9px;color:#9ca3af;text-align:center">Foto</span></div>'
+      )+'</div>'+
       '<div style="font-size:11px;font-weight:800;color:#1f2937;line-height:1.2;margin-bottom:1px">'+s.nama+'</div>'+
       '<div style="font-size:9.5px;color:#4b5563;margin-bottom:2px">'+s.kelas+'</div>'+
       '<div style="font-size:8.5px;color:#9ca3af;font-family:monospace;margin-bottom:6px">'+s.id+'</div>'+
@@ -1100,27 +1126,70 @@ function filterSiswa(){renderSiswa()}
 function renderSiswa(){
   const q=(document.getElementById('srcSiswa')||{}).value?.toLowerCase()||'';
   const list=students.filter(s=>s.nama.toLowerCase().includes(q)||s.kelas.toLowerCase().includes(q)||s.id.toLowerCase().includes(q));
-  // Build rows pakai string concat (hindari nested backtick)
-  var rows='';
-  list.forEach(function(s){
-    var foto=getFoto(s.id);
-    var fotoEl=foto
-      ?'<img class="foto-thumb" src="'+foto+'" onclick="openFotoModal(''+s.id+'',''+s.nama+'')" title="Ganti foto">'
-      :'<div class="foto-placeholder" onclick="openFotoModal(''+s.id+'',''+s.nama+'')" title="Tambah foto"><i class="ti ti-camera"></i></div>';
-    rows+='<tr>'+
-      '<td style="font-family:monospace;font-size:11px">'+s.id+'</td>'+
-      '<td>'+fotoEl+'</td>'+
-      '<td style="font-weight:600">'+s.nama+'</td>'+
-      '<td><span class="bdg bh" style="font-size:10px">'+s.kelas+'</span></td>'+
-      '<td><button class="btn bd bsm" style="padding:3px 8px" onclick="delSiswa(''+s.id+'')"><i class="ti ti-trash"></i></button></td>'+
-      '</tr>';
-  });
-  document.getElementById('tblSiswa').innerHTML='<table>'+
-    '<thead><tr><th>ID</th><th>Foto</th><th>Nama</th><th>Kelas</th><th></th></tr></thead>'+
-    '<tbody>'+rows+'</tbody></table>';
-  document.getElementById('cntSiswa').textContent='Total: '+list.length+' siswa';
+  document.getElementById('tblSiswa').innerHTML=`<table>
+    <thead><tr><th>Foto</th><th>ID</th><th>Nama</th><th>Kelas</th><th></th></tr></thead>
+    <tbody>${list.map(s=>{
+      const foto=getStudentPhoto(s.id);
+      const fotoHtml=foto
+        ?`<img src="${foto}" class="foto-thumb" alt="${s.nama}">`
+        :`<div class="foto-placeholder">📷</div>`;
+      return `<tr>
+        <td style="width:44px">
+          <label class="btn-foto" title="Upload foto ${s.nama}" style="display:inline-flex;align-items:center;gap:3px;cursor:pointer">
+            ${fotoHtml}
+            <input type="file" accept="image/*" class="foto-input" onchange="uploadFoto(this,'${s.id}')">
+          </label>
+        </td>
+        <td style="font-family:monospace;font-size:11px">${s.id}</td>
+        <td style="font-weight:600">${s.nama}</td>
+        <td><span class="bdg bh" style="font-size:10px">${s.kelas}</span></td>
+        <td><button class="btn bd bsm" style="padding:3px 8px" onclick="delSiswa('${s.id}')"><i class="ti ti-trash"></i></button></td>
+      </tr>`;
+    }).join('')}</tbody></table>`;
+  document.getElementById('cntSiswa').textContent='Total: '+list.length+' siswa (klik foto untuk upload)';
   popAll(); popCardSel();
 }
+// ============================================================
+// FOTO SISWA — tersimpan di localStorage per studentId
+// ============================================================
+function getStudentPhoto(id){
+  try{ return localStorage.getItem('foto_'+id)||null; }catch(e){return null}
+}
+function setStudentPhoto(id,dataUrl){
+  try{ localStorage.setItem('foto_'+id,dataUrl); }catch(e){
+    toast('Penyimpanan penuh, foto tidak tersimpan','⚠️');
+  }
+}
+function uploadFoto(input,studentId){
+  const file=input.files[0];
+  if(!file) return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const img=new Image();
+    img.onload=()=>{
+      // Resize ke 150x180 (proporsi ID card)
+      const W=150, H=180;
+      const canvas=document.createElement('canvas');
+      canvas.width=W; canvas.height=H;
+      const ctx=canvas.getContext('2d');
+      // Cover-fit: potong tengah agar tidak gepeng
+      const srcRatio=img.width/img.height;
+      const dstRatio=W/H;
+      let sx,sy,sw,sh;
+      if(srcRatio>dstRatio){sw=img.height*dstRatio;sh=img.height;sx=(img.width-sw)/2;sy=0}
+      else{sw=img.width;sh=img.width/dstRatio;sx=0;sy=(img.height-sh)/2}
+      ctx.drawImage(img,sx,sy,sw,sh,0,0,W,H);
+      const dataUrl=canvas.toDataURL('image/jpeg',0.82);
+      setStudentPhoto(studentId,dataUrl);
+      toast('Foto tersimpan ✓','📷');
+      renderSiswa(); // refresh tabel
+    };
+    img.src=e.target.result;
+  };
+  reader.readAsDataURL(file);
+  input.value=''; // reset input agar bisa upload ulang
+}
+
 function toggleAdd(){
   const f=document.getElementById('addForm');
   const vis=f.style.display!=='none';
@@ -1164,30 +1233,21 @@ function renderSettings(){
   document.getElementById('sAlamat').value=cfg.alamat||'';
   document.getElementById('sGasUrl').value=cfg.gasUrl||'';
   // Kelas list
-  var klsHtml='';
-  kelasList.forEach(function(k){
-    klsHtml+='<div style="display:flex;align-items:center;justify-content:space-between;'+
-      'padding:5px 8px;background:#f9fafb;border-radius:6px;margin-bottom:3px">'+
-      '<span style="font-size:13px">'+k+'</span>'+
-      '<button class="btn bd bsm" style="padding:3px 8px" onclick="delKelas(''+k+'')">'+
-      '<i class="ti ti-trash"></i></button></div>';
-  });
-  document.getElementById('klsList').innerHTML=klsHtml;
+  document.getElementById('klsList').innerHTML=kelasList.map(k=>`
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:5px 8px;background:#f9fafb;border-radius:6px;margin-bottom:3px">
+      <span style="font-size:13px">${k}</span>
+      <button class="btn bd bsm" style="padding:3px 8px" onclick="delKelas('${k}')"><i class="ti ti-trash"></i></button>
+    </div>`).join('');
   // Color per kelas
-  var clrHtml='';
-  kelasList.forEach(function(kls){
-    var curHex=clrMap[kls]||getCardColor(kls).c1;
-    var dots='';
-    COLORS.forEach(function(c){
-      dots+='<div onclick="setClr(''+kls+'',''+c.c1+'')" '+
-        'style="width:20px;height:20px;border-radius:50%;background:'+c.c1+';cursor:pointer;'+
-        'border:2.5px solid '+(curHex===c.c1?'#1f2937':'transparent')+'"></div>';
-    });
-    clrHtml+='<div style="display:flex;align-items:center;gap:6px;margin-bottom:6px">'+
-      '<span style="font-size:12px;width:80px;flex-shrink:0">'+kls+'</span>'+
-      '<div style="display:flex;gap:4px">'+dots+'</div></div>';
-  });
-  document.getElementById('clrSettings').innerHTML=clrHtml;
+  document.getElementById('clrSettings').innerHTML=kelasList.map(kls=>{
+    const curHex=clrMap[kls]||getCardColor(kls).c1;
+    return`<div style="display:flex;align-items:center;gap:6px;margin-bottom:6px">
+      <span style="font-size:12px;width:80px;flex-shrink:0">${kls}</span>
+      <div style="display:flex;gap:4px">${COLORS.map(c=>`
+        <div onclick="setClr('${kls}','${c.c1}')" style="width:20px;height:20px;border-radius:50%;background:${c.c1};cursor:pointer;border:2.5px solid ${curHex===c.c1?'#1f2937':'transparent'}"></div>`).join('')}
+      </div>
+    </div>`;
+  }).join('');
 }
 function addKelas(){
   const v=document.getElementById('nKelas').value.trim();
@@ -1326,96 +1386,6 @@ async function syncFromSheetsAuto(){
     setSyncDot('ok');
     toast('Data otomatis disinkron: '+students.length+' siswa','✅');
   }catch(e){setSyncDot('err')}
-}
-
-// ============================================================
-// FOTO SISWA — localStorage only (laptop admin)
-// ============================================================
-function getFoto(id){
-  try{return localStorage.getItem('misa_foto_'+id)||null;}catch(e){return null;}
-}
-function saveFotoData(id,b64){
-  try{localStorage.setItem('misa_foto_'+id,b64);}catch(e){toast('Storage penuh!','❌');}
-}
-function delFotoData(id){
-  try{localStorage.removeItem('misa_foto_'+id);}catch(e){}
-}
-
-var _fotoCurrentId='', _fotoDataUrl='';
-
-function openFotoModal(id,nama){
-  _fotoCurrentId=id; _fotoDataUrl='';
-  document.getElementById('fotoModalTitle').textContent='Foto: '+nama;
-  document.getElementById('fotoSaveBtns').style.display='none';
-  document.getElementById('fotoBtnRow').style.display='flex';
-  document.getElementById('fotoFileInput').value='';
-  // Tampilkan foto existing jika ada
-  var existing=getFoto(id);
-  if(existing){
-    document.getElementById('fotoPreviewImg').src=existing;
-    document.getElementById('fotoPreviewWrap').style.display='block';
-    // Tombol hapus
-    if(!document.getElementById('btnHapusFoto')){
-      var btn=document.createElement('button');
-      btn.id='btnHapusFoto'; btn.className='btn bd bsm';
-      btn.innerHTML='<i class="ti ti-trash"></i>Hapus Foto';
-      btn.onclick=function(){delFotoData(_fotoCurrentId);closeFotoModal();renderSiswa();previewCard();toast('Foto dihapus','✅');};
-      document.getElementById('fotoBtnRow').appendChild(btn);
-    }
-  }else{
-    document.getElementById('fotoPreviewWrap').style.display='none';
-    var old=document.getElementById('btnHapusFoto');
-    if(old) old.remove();
-  }
-  document.getElementById('fotoModal').style.display='flex';
-}
-
-function closeFotoModal(){
-  document.getElementById('fotoModal').style.display='none';
-  _fotoCurrentId=''; _fotoDataUrl='';
-}
-
-function fotoFromFile(input){
-  var file=input.files[0]; if(!file) return;
-  var reader=new FileReader();
-  reader.onload=function(e){
-    var img=new Image();
-    img.onload=function(){
-      // Crop & resize ke 240x320 (rasio 3:4 portrait)
-      var cv=document.createElement('canvas');
-      var srcW=img.width, srcH=img.height;
-      var cropW,cropH,offX=0,offY=0;
-      if(srcW/srcH > 3/4){cropH=srcH;cropW=srcH*3/4;offX=(srcW-cropW)/2;}
-      else{cropW=srcW;cropH=srcW*4/3;offY=(srcH-cropH)/2;}
-      cv.width=240; cv.height=320;
-      cv.getContext('2d').drawImage(img,offX,offY,cropW,cropH,0,0,240,320);
-      _fotoDataUrl=cv.toDataURL('image/jpeg',0.82);
-      document.getElementById('fotoPreviewImg').src=_fotoDataUrl;
-      document.getElementById('fotoPreviewWrap').style.display='block';
-      document.getElementById('fotoSaveBtns').style.display='flex';
-      document.getElementById('fotoBtnRow').style.display='none';
-    };
-    img.src=e.target.result;
-  };
-  reader.readAsDataURL(file);
-  input.value='';
-}
-
-function saveFoto(){
-  if(!_fotoDataUrl||!_fotoCurrentId){toast('Tidak ada foto!','❌');return;}
-  saveFotoData(_fotoCurrentId,_fotoDataUrl);
-  closeFotoModal();
-  renderSiswa();
-  previewCard();
-  toast('Foto tersimpan!','✅');
-}
-
-function retakeFoto(){
-  _fotoDataUrl='';
-  document.getElementById('fotoPreviewWrap').style.display='none';
-  document.getElementById('fotoSaveBtns').style.display='none';
-  document.getElementById('fotoBtnRow').style.display='flex';
-  document.getElementById('fotoFileInput').value='';
 }
 
 // ============================================================
